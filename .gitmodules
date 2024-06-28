@@ -1,0 +1,3 @@
+[submodule "recipe/psi4-confidential"]
+	path = recipe/psi4-confidential
+	url = git@github.com:UBCC3/psi4-confidential.git

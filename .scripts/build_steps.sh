@@ -16,6 +16,8 @@ source ${FEEDSTOCK_ROOT}/.scripts/logging_utils.sh
 
 ( startgroup "Configuring conda" ) 2> /dev/null
 
+#export BUILD_WITH_CONDA_DEBUG=1
+
 export PYTHONUNBUFFERED=1
 export RECIPE_ROOT="${RECIPE_ROOT:-/home/conda/recipe_root}"
 export CI_SUPPORT="${FEEDSTOCK_ROOT}/.ci_support"

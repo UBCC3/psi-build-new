@@ -12,8 +12,9 @@ if [ "$(uname)" == "Linux" ]; then
 
     # c-f/staged-recipes and c-f/*-feedstock on Linux is inside a non-psi4 git repo, messing up psi4's version computation.
     #   The "staged-recipes" and "feedstock_root" skip patterns are now in psi4. Diagnostics below in case any other circs crop up.
-    git rev-parse --is-inside-work-tree
-    git rev-parse --show-toplevel
+    # Disable version checking
+    #git rev-parse --is-inside-work-tree
+    #git rev-parse --show-toplevel
 
     cp external_src/psi4PluginCachelinux.cmake t_plug0
 fi
