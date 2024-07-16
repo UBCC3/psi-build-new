@@ -1,13 +1,5 @@
 {% set name = "psi4" %}
-{% set version = "1.9.1" %}
-{% set commit = "f53cdd7cb" %}
-{% set sha256 = "ccd69bdc1d8319470513b4d3c1e0d737fc7788a50d7e48f8db762a0fcf795dad" %}
-
-# versioning: want conda package and `psi4 --version` to match
-# * proper tagged releases compute their versions consistent with recipe w/o interventions.
-#   so comment out the "echo ... metadata.py" cmds in build.sh and bld.bat. ("commit" var here also disposable.)
-# * to package _any_ commit, set it to "commit" jinja, set "version" jinja to a fake prerelease tag like "1.8a3", use the "commit" version for source/url, edit the sha256, and let the "echo ... metadata.py" machinery work.
-#   note that the non-c-f recipe didn't need this machinery b/c it used source/git_url and load_setup_py_data.
+{% set version = "1.9.1ubcc3.morefnctls.2024.07.16" %}
 
 package:
   name: {{ name|lower }}
@@ -15,7 +7,10 @@ package:
 
 source:
   #- url: https://github.com/{{ name }}/{{ name }}/archive/{{ commit }}.tar.gz
-  - path: ./psi4-confidential
+  # This path is made possible by hacking .scripts/run_docker_build.sh
+  # This REQUIRES that the parent directory containing this repo has a QCEngine directory containing the QCE repo
+  # This is kindof hack, but Conda's build system is weird
+  - path: ./psi4
   - url: https://github.com/psi4/iomp5md/archive/31b4ccb.tar.gz               # [win]
     sha256: d9c6ad3976183f54b676335885d8557d67ca7b25ac4115b91b4cc42281d95f7c  # [win]
     folder: external_src                                                      # [win]
@@ -26,7 +21,7 @@ build:
   number: 1
   # skip: true  # [py != 310]
   script_env:
-    - PSI4_PRETEND_VERSIONLONG={{ version }}+{{ commit }}
+    - PSI4_PRETEND_VERSIONLONG={{ version }}
   binary_relocation: true
   run_exports:
     # only relevant for the rare "psi4 plugin" case (links to psi4/core.*so), not the usual "psi4 module" case (import psi4)
@@ -139,78 +134,6 @@ requirements:
     - pyddx >=0.4.3                                    # 0.4.3 has lpb correction
     - adcc >=0.15.16                                   # 0.15.16 has transition moment corrections
     - cppe ==0.3.1                                     # 0.3.2 has libecpint problems
-
-# Several runtime-optional packages are commented so they don't factor into the py312 migration.
-#   No actual capability is compromised. ~adcc~, cppe, ~pyddx~, ~dftd3-python~, ~dftd4-python~
-
-test:
-  imports:
-    - psi4
-  requires:
-    - pip                                                                          # provides `pip check`
-    - pytest
-    - pytest-xdist
-    - m2w64-binutils                                                     # [win]   # provides objdump.exe
-    # qc runtime opt'l
-    #- adcc                                                               # [unix]  # libtensorlight built for mkl=2022; rebuild after migration
-    - cppe                                                               # [unix and (py != 312)]
-    - pyddx                                                              # [unix]
-    - dftd3-python                                                       # [not (win and py==312)]
-    - dftd4-python                                                       # [py != 312]
-    - toml                                                                         # needed for qcengine/dftd4-python interface
-    - pylibefp
-    - gcp-correction
-    - geometric
-    - pymdi
-    # plugin testing
-    - {{ compiler('cxx') }}                                              # [unix]
-    - cmake                                                              # [unix]
-    - make                                                               # [unix]
-    - pybind11                                                           # [unix]
-    - eigen                                                              # [unix]
-    - libboost-headers                                                   # [unix]
-  commands:
-    # Verify module
-    - test -f $SP_DIR/psi4/core*.so                                      # [unix]
-    - test -f $SP_DIR/psi4/driver/driver.py                              # [unix]
-    - if not exist %SP_DIR%\\psi4\\core*.pyd exit 1                      # [win]
-    - if not exist %SP_DIR%\\psi4\\driver\\driver.py exit 1              # [win]
-    # Verify executable
-    - test -f $PREFIX/bin/psi4                                           # [unix]
-    - psi4 --version                                                     # [unix]
-    - psi4 --module                                                      # [unix]
-    - if exist %PREFIX%\\Scripts\\psi4 exit 1                            # [win]
-    - if not exist %PREFIX%\\Scripts\\psi4-script.py exit 1              # [win]   # aka bin/psi4
-    - if not exist %PREFIX%\\Scripts\\psi4.exe exit 1                    # [win]
-    - psi4.exe --version                                                 # [win]
-    - psi4.exe --module                                                  # [win]
-    - python -c "import psi4;print(psi4.executable)"
-    # Verify accessories
-    - test -f $PREFIX/include/psi4/psi4-dec.h                            # [unix]
-    - test -f $PREFIX/share/cmake/psi4/psi4Config.cmake                  # [unix]
-    - test -f $PREFIX/share/cmake/TargetLAPACK/TargetLAPACKConfig.cmake  # [unix]
-    - test -f $PREFIX/share/psi4/basis/cc-pvdz.gbs                       # [unix]
-    - if not exist %PREFIX%\\Library\\include\\psi4\\psi4-dec.h exit 1   # [win]
-    - if not exist %PREFIX%\\Library\\share\\cmake\\psi4\\psi4Config.cmake exit 1  # [win]
-    - if not exist %PREFIX%\\Library\\share\\cmake\\TargetLAPACK\\TargetLAPACKConfig.cmake exit 1  # [win]
-    - if not exist %PREFIX%\\Library\\share\\psi4\\basis\\cc-pvdz.gbs exit 1  # [win]
-    # Inspect linkage
-    - ldd -v $SP_DIR/psi4/core*.so                                       # [linux]
-    - otool -L $SP_DIR/psi4/core*.so                                     # [osx]
-    - objdump.exe -p %SP_DIR%\\psi4\\core.*.pyd | findstr /i "dll"       # [win]
-    # Actually test
-    - pip check
-    - python -c "import psi4;assert psi4.__version__ == '{{ version }}', f'{psi4.__version__=} differs from recipe=\'{{ version }}\''"
-    - python -c "from psi4 import core; core.set_num_threads(42); assert core.get_num_threads() == 42"
-    - python -c "import psi4;print(psi4.addons())"
-    - MKL_CBWR=AVX pytest -rws -v --durations=20 --color yes -n auto $SP_DIR/psi4 -m "smoke"  # [unix]
-    - pytest -rws -v --durations=20 --color yes -n auto %SP_DIR%\\psi4 -m "smoke and not d2ints"  # [win]
-    # Test a plugin
-    - PLUG=plugdfmp2                                                     # [unix]
-    - psi4 --plugin-name $PLUG --plugin-template dfmp2                   # [unix]
-    - cd $PLUG && `psi4 --plugin-compile` && make && cd ..               # [unix]
-    - PYTHONPATH=. python $PREFIX/share/psi4/scripts/test_threading.py --plugin-dfmp2 --module="$PLUG" -n2  # [unix]
-    - PYTHONPATH=. python $PREFIX/share/psi4/scripts/test_threading.py --passfail --ldd --module="$PLUG/$PLUG"  # [unix]
 
 about:
   home: http://psicode.org

@@ -16,6 +16,7 @@ PROVIDER_DIR="$(basename $THISDIR)"
 
 FEEDSTOCK_ROOT="$( cd "$( dirname "$0" )/.." >/dev/null && pwd )"
 RECIPE_ROOT="${FEEDSTOCK_ROOT}/recipe"
+SRC_ROOT="${FEEDSTOCK_ROOT}/../psi4/"
 
 if [ -z ${FEEDSTOCK_NAME} ]; then
     export FEEDSTOCK_NAME=$(basename ${FEEDSTOCK_ROOT})
@@ -85,6 +86,7 @@ export IS_PR_BUILD="${IS_PR_BUILD:-False}"
 docker pull "${DOCKER_IMAGE}"
 docker run ${DOCKER_RUN_ARGS} \
            -v "${RECIPE_ROOT}":/home/conda/recipe_root:rw,z,delegated \
+           -v "${SRC_ROOT}":/home/conda/recipe_root/psi4:rw,z,delegated \
            -v "${FEEDSTOCK_ROOT}":/home/conda/feedstock_root:rw,z,delegated \
            -e CONFIG \
            -e HOST_USER_ID \
