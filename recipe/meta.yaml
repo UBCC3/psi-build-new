@@ -11,14 +11,11 @@ source:
   # This REQUIRES that the parent directory containing this repo has a QCEngine directory containing the QCE repo
   # This is kindof hack, but Conda's build system is weird
   - path: ./psi4
-  - url: https://github.com/psi4/iomp5md/archive/31b4ccb.tar.gz               # [win]
-    sha256: d9c6ad3976183f54b676335885d8557d67ca7b25ac4115b91b4cc42281d95f7c  # [win]
-    folder: external_src                                                      # [win]
   - path: ./src                                                               # [unix]
     folder: external_src                                                      # [unix]
 
 build:
-  number: 1
+  number: 3
   # skip: true  # [py != 310]
   script_env:
     - PSI4_PRETEND_VERSIONLONG={{ version }}
@@ -26,8 +23,6 @@ build:
   run_exports:
     # only relevant for the rare "psi4 plugin" case (links to psi4/core.*so), not the usual "psi4 module" case (import psi4)
     - {{ pin_subpackage('psi4', max_pin='x.x') }}
-  ignore_run_exports:
-    - numpy
   ignore_run_exports_from:
     - zlib
 
@@ -55,6 +50,7 @@ build:
 # * without the `{{ mkl }}` pin, various attempts would either install mkl + openblas + libblas=*=*openblas or try to fall back to libblas==3.8.0=10_mkl
 # * current conda-forge-pinning is mkl=mkl-devel=2022, so hopefully this recipe is still consistent with the c-f stack.
 # * [Oct 2023, #19] new libblas w/mkl2023 available for all arch, so releasing pin and consolidating lines
+# * [Jul 2024] removing the cbc.yaml now that mkl2023 is universal. also can use adcc again
 
 # bkgd: the windows openmp story
 # * the windows mkl package depends on intel-openmp (provides libiomp5md.dll).
@@ -68,6 +64,7 @@ build:
 # * for threading on windows, we're certainly willing for the psi4 recipe to do whatever works well with the c-f stack.
 #   However, at the moment this aspect of the stack seems a little fractured, so the recipe is defaulting to the
 #   mkl + intel-openmp + stashed libiomp5md.lib procedure that has worked compatibly with c-f for the last couple years.
+# * [Jul 2024] intel-openmp now provides libiomp5md.lib so dropping the external src.
 
 requirements:
   build:
@@ -76,12 +73,14 @@ requirements:
     - pybind11                               # [build_platform != target_platform]
     - numpy                                  # [build_platform != target_platform]
     - qcelemental                            # [build_platform != target_platform]  # version detection w/cross+poetry
-    - {{ compiler('c') }}
-    - {{ compiler('cxx') }}
-    - cmake
+    - {{ stdlib("c") }}
+    - {{ compiler("c") }}
+    - {{ compiler("cxx") }}
+    - cmake 3.29                                       # 3.30 failing for intel mac
     - make                                   # [unix]
     - ninja                                  # [win]
     - llvm-openmp                            # [unix]
+    - intel-openmp                           # [win]
   host:
     - eigen
     - libboost-headers
@@ -116,7 +115,7 @@ requirements:
     - liblapack                              # [not x86_64]
     - msgpack-python
     - networkx
-    - numpy
+    - {{ pin_compatible('numpy') }}
     - pydantic >=1.10
     - python
     - scipy
