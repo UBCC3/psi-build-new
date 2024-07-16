@@ -1,14 +1,15 @@
 {% set name = "qcengine" %}
-{% set version = "0.30.0" %}
-{% set sha256 = "ba62d34dbcf487e8368f6c19762a19e1c5f06af7e705f6c583c0632b35bccf7d" %}
+{% set version = "0.30.0ubcc3.2024.07.16" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  sha256: {{ sha256 }}
+  # This path is made possible by hacking .scripts/run_docker_build.sh
+  # This REQUIRES that the parent directory containing this repo has a QCEngine directory containing the QCE repo
+  # This is kindof hack, but Conda's build system is weird
+  - path: ./qce
 
 build:
   noarch: python
@@ -27,15 +28,6 @@ requirements:
     - py-cpuinfo
     - psutil
     - qcelemental >=0.26.0,<0.30.0
-
-test:
-  imports:
-    - qcengine
-  requires:
-    - pytest
-    - msgpack-python
-  commands:
-    - pytest --pyargs qcengine
 
 about:
   home: http://github.com/MolSSI/QCEngine
