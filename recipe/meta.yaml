@@ -1,5 +1,5 @@
 {% set name = "qcengine" %}
-{% set version = "0.30.0ubcc3.2024.07.16" %}
+{% set version = "__BUILD_VERSION__" %}
 
 package:
   name: {{ name|lower }}
