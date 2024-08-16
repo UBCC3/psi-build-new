@@ -1,5 +1,5 @@
 {% set name = "psi4" %}
-{% set version = "1.9.1ubcc3.morefnctls.2024.07.16" %}
+{% set version = "__BUILD_VERSION__" %}
 
 package:
   name: {{ name|lower }}
